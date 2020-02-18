@@ -845,21 +845,19 @@ CresKitAccessory.prototype = {
                     .on('set', 1);
                 services.push(this.tvService);
 
-                var inputSource = new Service.InputSource("test", "1"); //displayname, subtype?
-                inputSource.setCharacteristic(Characteristic.Identifier, 1)
-                    .setCharacteristic(Characteristic.ConfiguredName, "Apple TV")
-                    .setCharacteristic(Characteristic.CurrentVisibilityState, Characteristic.CurrentVisibilityState.SHOWN)
-                    .setCharacteristic(Characteristic.IsConfigured, Characteristic.IsConfigured.CONFIGURED)
-                    .setCharacteristic(Characteristic.InputSourceType, Characteristic.InputSourceType.AIRPLAY);
-                inputSource.uri = 1;
-                inputSource.type = InputSourceType.AIRPLAY;
-                inputSource.id = 1;
-                services.push(inputSource);
-                tvService.addLinkedService(inputSource);
-                //this.inputSources[this.inputSourceCount] = inputSource;
-                //this.uriToInputSource[uri] = inputSource;
-                //this.inputSourceCount++;
-
+                for (var index in this.config.inputs) {
+                    var inputSource = new Service.InputSource(this.config.inputs[index].name, this.config.inputs[index].subtype); //displayname, subtype?
+                    inputSource.setCharacteristic(Characteristic.Identifier, index)
+                        .setCharacteristic(Characteristic.ConfiguredName, "Apple TV")
+                        .setCharacteristic(Characteristic.CurrentVisibilityState, Characteristic.CurrentVisibilityState.SHOWN)
+                        .setCharacteristic(Characteristic.IsConfigured, Characteristic.IsConfigured.CONFIGURED)
+                        .setCharacteristic(Characteristic.InputSourceType, Characteristic.InputSourceType.HDMI);
+                    //inputSource.uri = 1;
+                    inputSource.type = InputSourceType.AIRPLAY;
+                    inputSource.id = index;
+                    //services.push(inputSource);
+                    tvService.addLinkedService(inputSource);
+                }
 
                 services.push(tvService);
                 break;
