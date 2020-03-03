@@ -164,6 +164,31 @@ CresKitAccessory.prototype = {
         cresKitSocket.write(this.config.type + ":" + this.id + ":setPowerState:" + value + "*"); // (* after value required on set)
         callback();
     },
+    getInputState: function (callback) { // this.config.type = Lightbulb, Switch, etc
+        cresKitSocket.write(this.config.type + ":" + this.id + ":getInputState:*"); // (:* required) on get
+        openGetStatus.push(this.config.type + ":" + this.id + ":getInputState:*");
+        // Listen Once for value coming back, if it does trigger callback
+        eventEmitter.once(this.config.type + ":" + this.id + ":getInputState", function (value) {
+            try {
+                closeGetStatus(this.config.type + ":" + this.id + ":getInputState:*");
+                eventEmitter.emit(this.config.type + ":" + this.id + ":eventInputState", value);
+                callback(null, value);
+            } catch (err) {
+                this.log(err);
+            }
+        }.bind(this));
+    },
+    setInputState: function (inputIndex, callback) {
+     //Do NOT send cmd to Crestron when Homebridge was notified from an Event - Crestron already knows the state!
+        if (value) {
+            value = 1;
+        }
+        else {
+            value = 0;
+        }
+        cresKitSocket.write(this.config.type + ":" + this.id + ":setInputState:" + value + "*"); // (* after value required on set)
+        callback();
+    },
     //---------------
     // Dimming Light
     //---------------
