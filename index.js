@@ -804,6 +804,23 @@ CresKitAccessory.prototype = {
                 services.push(switchService);
                 break;
             }
+                
+            case "Outlet": {
+                var outletService = new Service.Outlet();
+                var PowerState = outletService
+                    .getCharacteristic(Characteristic.On)
+                    .on('set', this.setPowerState.bind(this))
+                    .on('get', this.getPowerState.bind(this));
+
+                // Register a listener for event changes
+                eventEmitter.on(this.config.type + ":" + this.id + ":eventPowerState", function (value) {
+
+                    PowerState.updateValue(value);
+                }.bind(this));
+
+                services.push(outletService);
+                break;
+            }
 
             case "TV": {
                 var tvService = new Service.Television();
