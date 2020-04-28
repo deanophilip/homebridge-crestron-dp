@@ -1,6 +1,6 @@
 {
-  "name": "homebridge-creskit2",
-  "version": "2.2.0",
+  "name": "homebridge-creskit-dp",
+  "version": "1.0.0",
   "description": "A crestron plugin for homebridge",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/songzh96/homebridge-crestron.git"
+    "url": "git://github.com/deanophilip/homebridge-crestron-dp.git"
   },
   "keywords": [
     "homebridge",
@@ -17,12 +17,12 @@
     "crestron"
   ],
   "deprecated": false,
-  "author": "songzh96",
+  "author": "deanophilip",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/songzh96/homebridge-crestron/issues"
+    "url": "https://github.com/deanophilip/homebridge-crestron-dp/issues"
   },
-  "homepage": "https://github.com/songzh96/homebridge-crestron#readme",
+  "homepage": "https://github.com/deanophilip/homebridge-crestron-dp#readme",
   "dependencies": {
     "async": "^2.6.1"
   },
