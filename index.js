@@ -13,7 +13,7 @@ var Service, Characteristic;
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
-    homebridge.registerPlatform("homebridge-creskit", "CresKit", CresKit);
+    homebridge.registerPlatform("homebridge-creskit-dp", "CresKit-DP", CresKit);
 }
 
 // TCP connection to Crestron Module
