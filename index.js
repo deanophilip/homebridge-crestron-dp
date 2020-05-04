@@ -186,12 +186,19 @@ CresKitAccessory.prototype = {
         }.bind(this));
     },
     setActiveInput: function (value, callback) {
-
         cresKitSocket.write(this.config.type + ":" + this.id + ":setActiveInput:" + value + "*"); // (* after value required on set)
-        //this.log("cresKitSocket.write" + (this.config.type + ":" + this.id + ":setLightBrightness:" + value + "*"));
         callback();
     },
 
+    //---------------
+    // RemoteKey - TV or analog joins
+    //---------------
+
+    sendRemoteKey: function (value, callback) {
+        cresKitSocket.write(this.config.type + ":" + this.id + ":setRemoteKey:" + value + "*"); // (* after value required on set)
+        this.log("cresKitSocket.write" + (this.config.type + ":" + this.id + ":setRemoteKey:" + value + "*"));
+        callback();
+    },
 
     //---------------
     // Dimming Light
@@ -756,10 +763,12 @@ CresKitAccessory.prototype = {
     setVolumeRel: function (value, callback) {
         //Increment = 1; Decrement = 0
         cresKitSocket.write(this.config.type + ":" + this.id + ":setVolumeRel:" + value + "*");
+        this.log("cresKitSocket.write" + (this.config.type + ":" + this.id + ":setVolumeRel:" + value + "*"));
         callback();
     },
     setVolumeAbs: function (value, callback) {
         cresKitSocket.write(this.config.type + ":" + this.id + ":setVolumeAbs:" + value + "*");
+        this.log("cresKitSocket.write" + (this.config.type + ":" + this.id + ":setVolumeAbs:" + value + "*"));
         callback();
     },
     //---------------
@@ -891,15 +900,13 @@ CresKitAccessory.prototype = {
 
                 var speakerService = new Service.TelevisionSpeaker();
                 speakerService
-                    .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE);
+                    .getCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE);
                 speakerService
                     .setCharacteristic(Characteristic.Name, this.config.name);
-                speakerService
-                    .setCharacteristic(Characteristic.ConfiguredName, this.config.name);
-                speakerService
-                    .setCharacteristic(Characteristic.VolumeControlType, this.config.VolumeControlType);
 
                 if(this.config.VolumeControlType == "Absolute"){
+                    speakerService
+                        .getCharacteristic(Characteristic.VolumeControlType, Characteristic.VolumeControlType.Absolute);
                     var VolumeSelector = speakerService
                         .getCharacteristic(Characteristic.VolumeSelector) //increase/decrease volume
                         .on('set', this.setVolumeAbs.bind(this))
@@ -910,6 +917,8 @@ CresKitAccessory.prototype = {
                 }
                 else if(this.config.VolumeControlType == "Relative"){
                     speakerService
+                        .getCharacteristic(Characteristic.VolumeControlType, Characteristic.VolumeControlType.Relative);
+                    speakerService
                         .getCharacteristic(Characteristic.VolumeSelector) //increase/decrease volume
                         .on('set', this.setVolumeRel.bind(this));
                 }
@@ -917,16 +926,16 @@ CresKitAccessory.prototype = {
                 services.push(speakerService);
                 tvService.addLinkedService(speakerService);
 
-                // tvService
-                //     .getCharacteristic(Characteristic.RemoteKey)
-                //     .on('set', 1);
+                tvService
+                    .getCharacteristic(Characteristic.RemoteKey)
+                    .on('set', this.sendRemoteKey.bind(this));
+
+
+
+                
                 //services.push(this.tvService);
                 var input;
-                this.config.inputs.forEach(element => console.log(element));
                 this.config.inputs.forEach(function(element){
-                    console.log(element);
-                    console.log(element.name);
-                    console.log(element.index);
                     var inputSource = new Service.InputSource(element.name, element.index); //displayname, subtype?
                     inputSource.setCharacteristic(Characteristic.Identifier, element.index)
                         .setCharacteristic(Characteristic.ConfiguredName, element.name)
