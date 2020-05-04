@@ -127,7 +127,7 @@ function CresKitAccessory(log, platformConfig, accessoryConfig) {
     this.config = accessoryConfig;
     this.id = accessoryConfig.id;
     this.name = accessoryConfig.name
-    this.model = "Komen v2.2.0";
+    this.model = "DOP 1.0.0";
 
 }
 
@@ -164,6 +164,35 @@ CresKitAccessory.prototype = {
         cresKitSocket.write(this.config.type + ":" + this.id + ":setPowerState:" + value + "*"); // (* after value required on set)
         callback();
     },
+
+    //---------------
+    // ActiveInput - TV or analog joins
+    //---------------
+
+    getActiveInput: function (callback) {
+        cresKitSocket.write(this.config.type + ":" + this.id + ":getActiveInput:*"); // (:* required) on get
+        openGetStatus.push(this.config.type + ":" + this.id + ":getActiveInput:*");
+
+        // Listen Once for value coming back, if it does trigger callback
+        eventEmitter.once(this.config.type + ":" + this.id + ":getActiveInput", function (value) {
+            try {
+                closeGetStatus(this.config.type + ":" + this.id + ":getActiveInput:*");
+
+                eventEmitter.emit(this.config.type + ":" + this.id + ":eventActiveInput", value);
+                callback(null, value);
+            } catch (err) {
+                this.log(err);
+            }
+        }.bind(this));
+    },
+    setActiveInput: function (value, callback) {
+
+        cresKitSocket.write(this.config.type + ":" + this.id + ":setActiveInput:" + value + "*"); // (* after value required on set)
+        //this.log("cresKitSocket.write" + (this.config.type + ":" + this.id + ":setLightBrightness:" + value + "*"));
+        callback();
+    },
+
+
     //---------------
     // Dimming Light
     //---------------
@@ -724,9 +753,13 @@ CresKitAccessory.prototype = {
             }
         }.bind(this));
     },
-    setVolume: function (value, callback) {
-        //ON = 1; OFF = 0
-        cresKitSocket.write(this.config.type + ":" + this.id + ":setVolume:" + value + "*");
+    setVolumeRel: function (value, callback) {
+        //Increment = 1; Decrement = 0
+        cresKitSocket.write(this.config.type + ":" + this.id + ":setVolumeRel:" + value + "*");
+        callback();
+    },
+    setVolumeAbs: function (value, callback) {
+        cresKitSocket.write(this.config.type + ":" + this.id + ":setVolumeAbs:" + value + "*");
         callback();
     },
     //---------------
@@ -824,17 +857,27 @@ CresKitAccessory.prototype = {
 
             case "TV": {
                 var tvService = new Service.Television();
-
+                var inputSources = new Array();
 
                 var PowerState = tvService
                     .getCharacteristic(Characteristic.Active)
-                    .on('get', this.getPowerState.bind(this))
-                    .on('set', this.setPowerState.bind(this));
+                    .on('set', this.setPowerState.bind(this))
+                    .on('get', this.getPowerState.bind(this));
 
                 // Register a listener for event changes
                 eventEmitter.on(this.config.type + ":" + this.id + ":eventPowerState", function (value) {
 
                     PowerState.updateValue(value);
+                }.bind(this));
+
+                var InputState = tvService
+                    .getCharacteristic(Characteristic.ActiveIdentifier)
+                    .on('set', this.setActiveInput.bind(this))
+                    .on('get', this.getActiveInput.bind(this));
+
+                eventEmitter.on(this.config.type + ":" + this.id + ":eventActiveInput", function (value) {
+
+                    InputState.updateValue(value);
                 }.bind(this));
 
                 tvService
@@ -843,40 +886,61 @@ CresKitAccessory.prototype = {
                         Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
                     );
 
+                tvService
+                    .setCharacteristic(Characteristic.ConfiguredName, this.config.name);
 
                 var speakerService = new Service.TelevisionSpeaker();
                 speakerService
                     .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE);
                 speakerService
-                    .setCharacteristic(Characteristic.Name, this.soundoutput);
+                    .setCharacteristic(Characteristic.Name, this.config.name);
                 speakerService
-                    .setCharacteristic(Characteristic.VolumeControlType, Characteristic.VolumeControlType.RELATIVE);
+                    .setCharacteristic(Characteristic.ConfiguredName, this.config.name);
                 speakerService
-                    .getCharacteristic(Characteristic.VolumeSelector) //increase/decrease volume
-                    .on('set', this.setVolume.bind(this));
+                    .setCharacteristic(Characteristic.VolumeControlType, this.config.VolumeControlType);
 
+                if(this.config.VolumeControlType == "Absolute"){
+                    var VolumeSelector = speakerService
+                        .getCharacteristic(Characteristic.VolumeSelector) //increase/decrease volume
+                        .on('set', this.setVolumeAbs.bind(this))
+                        .on('get', this.getVolume.bind(this));
+                    eventEmitter.on(this.config.type + ":" + this.id + ":eventVolumeSelector", function (value) {
+                        VolumeSelector.updateValue(value);
+                    }.bind(this));
+                }
+                else if(this.config.VolumeControlType == "Relative"){
+                    speakerService
+                        .getCharacteristic(Characteristic.VolumeSelector) //increase/decrease volume
+                        .on('set', this.setVolumeRel.bind(this));
+                }
+                
                 services.push(speakerService);
+                tvService.addLinkedService(speakerService);
 
-                tvService
-                    .getCharacteristic(Characteristic.RemoteKey)
-                    .on('set', 1);
-                services.push(this.tvService);
+                // tvService
+                //     .getCharacteristic(Characteristic.RemoteKey)
+                //     .on('set', 1);
+                //services.push(this.tvService);
+                var input;
+                this.config.inputs.forEach(element => console.log(element));
+                this.config.inputs.forEach(function(element){
+                    console.log(element);
+                    console.log(element.name);
+                    console.log(element.index);
+                    var inputSource = new Service.InputSource(element.name, element.index); //displayname, subtype?
+                    inputSource.setCharacteristic(Characteristic.Identifier, element.index)
+                        .setCharacteristic(Characteristic.ConfiguredName, element.name)
+                        .setCharacteristic(Characteristic.CurrentVisibilityState, Characteristic.CurrentVisibilityState.SHOWN)
+                        .setCharacteristic(Characteristic.IsConfigured, Characteristic.IsConfigured.CONFIGURED)
+                        .setCharacteristic(Characteristic.InputSourceType, Characteristic.InputSourceType.HDMI)
+                    inputSource.uri = element.index;
+                    inputSource.type = Characteristic.InputSourceType.HDMI;
+                    inputSource.id = element.index;
 
-                var inputSource = new Service.InputSource("test", "1"); //displayname, subtype?
-                inputSource.setCharacteristic(Characteristic.Identifier, 1)
-                    .setCharacteristic(Characteristic.ConfiguredName, "Apple TV")
-                    .setCharacteristic(Characteristic.CurrentVisibilityState, Characteristic.CurrentVisibilityState.SHOWN)
-                    .setCharacteristic(Characteristic.IsConfigured, Characteristic.IsConfigured.CONFIGURED)
-                    .setCharacteristic(Characteristic.InputSourceType, Characteristic.InputSourceType.AIRPLAY);
-                inputSource.uri = 1;
-                inputSource.type = InputSourceType.AIRPLAY;
-                inputSource.id = 1;
-                services.push(inputSource);
-                tvService.addLinkedService(inputSource);
-                //this.inputSources[this.inputSourceCount] = inputSource;
-                //this.uriToInputSource[uri] = inputSource;
-                //this.inputSourceCount++;
-
+                    inputSources.push(inputSource);
+                    services.push(inputSource);
+                    tvService.addLinkedService(inputSources[inputSources.length - 1]);
+                });
 
                 services.push(tvService);
                 break;
