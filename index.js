@@ -185,6 +185,7 @@ CresKitAccessory.prototype = {
             }
         }.bind(this));
     },
+
     setActiveInput: function (value, callback) {
         cresKitSocket.write(this.config.type + ":" + this.id + ":setActiveInput:" + value + "*"); // (* after value required on set)
         callback();
