@@ -1,4 +1,5 @@
 # It‘s based on [homebridge-creskit](https://github.com/marcusadolfsson/homebridge-creskit)
+# It‘s forked from [homebridge-crestron](https://github.com/songzh96/homebridge-crestron)
 
 #### If you need me to custom development, please send me an email. Developing this plugin also takes a lot of time, time is money, please understand.
 
