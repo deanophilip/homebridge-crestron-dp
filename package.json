@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/deanophilip/homebridge-crestron-dp#readme",
   "dependencies": {
-    "async": "^2.6.1"
+    "async": "^2.6.4"
   },
   "engines": {
     "homebridge": ">=0.4.16",
